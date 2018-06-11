@@ -17,7 +17,10 @@ export const FileTable = ({usages, selectFile}) => {
 							<tbody>
 								{usages.map(usage => <tr key={usage.file}>
 										<td style={{cursor: 'pointer'}}  onClick={() => selectFile(usage.file)}>
-											<div style={{textAlign: 'left', background: `linear-gradient(90deg, lightsteelblue ${usage.percent}%, #FFF 0%)`}}>
+											<div style={{
+												width: '500px',
+												textAlign: 'left',
+												background: `linear-gradient(90deg, lightsteelblue ${usage.percent}%, #FFF 0%)`}}>
 												{usage.file}
 											</div>
 										</td>
