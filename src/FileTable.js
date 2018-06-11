@@ -1,4 +1,5 @@
 import React from 'react';
+import Percent from 'react-icons/lib/fa/percent';
 
 export const FileTable = ({usages, selectFile}) => {
 		return <React.Fragment>
@@ -10,8 +11,8 @@ export const FileTable = ({usages, selectFile}) => {
 							<thead>
 								<tr>
 									<th >Filename</th>
-									<th>#</th>
-									<th>% of total</th>
+									<th title="Number of Changes">#</th>
+									<th title="Percent of all changes that included this file.."><Percent/></th>
 								</tr>
 							</thead>
 							<tbody>

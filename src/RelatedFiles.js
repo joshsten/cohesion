@@ -5,13 +5,15 @@ import Alone from 'react-icons/lib/fa/user-times';
 import Cohesion from 'react-icons/lib/fa/arrows-h';
 
 export const RelatedFiles = ({selectedFile, relatedFiles, back, selectFile}) => {
+	const selectedSplitPath = selectedFile.split('/');
+	const selectedFilename = selectedFile[selectedSplitPath.length - 1];
 	return <div>
 		<div className="row">
 			<div className="columns twelve">
 				<button onClick={back} className="button"><FaListUl/>Files Changed</button>
 			</div>
 		</div>
-		<h4>{selectedFile} changes with...</h4>
+		<h4 title={selectedFile}>{`${selectedFile[selectedSplitPath.length - 2]}/${selectedFilename}`} changes with...</h4>
 		<table>
 			<colgroup>
 				<col span="1" style={{width: '70%'}}/>
@@ -34,8 +36,7 @@ export const RelatedFiles = ({selectedFile, relatedFiles, back, selectFile}) => 
 				return <tr
 					key={file.filenameThatAlsoChanged}
 					title={
-						`When I change, ${filename} changes with me ${file.percentCohesiveByChange}% of the time (${file.timesChangedWith} times).
-							It's changed on it's own without me ${file.timesDidNotChangeWith} times.`}
+						`When I change, ${filename} changes with me ${file.percentCohesiveByChange}% of the time (${file.timesChangedWith} times). It's changed on it's own without me ${file.timesDidNotChangeWith} times.`}
 					>
 					<td onClick={() => selectFile(file.filenameThatAlsoChanged)}>
 						<div title={file.filenameThatAlsoChanged} style={{
@@ -44,7 +45,7 @@ export const RelatedFiles = ({selectedFile, relatedFiles, back, selectFile}) => 
 							textAlign: 'left',
 							background: `linear-gradient(90deg, lightsteelblue ${file.percentCohesiveByChange}%, #FFF 0%)`
 							}}>
-							{filename}
+							{`${splitPath[splitPath.length - 2]}/${filename}`}
 						</div>
 					</td>
 					<td>{file.percentCohesiveByChange}%</td>
