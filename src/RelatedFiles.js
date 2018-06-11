@@ -1,6 +1,10 @@
 import React from 'react';
 import FaListUl from 'react-icons/lib/fa/list-ul';
-export const RelatedFiles = ({selectedFile, relatedFiles, back}) => {
+import Together from 'react-icons/lib/fa/group';
+import Alone from 'react-icons/lib/fa/user-times';
+import Cohesion from 'react-icons/lib/fa/arrows-h';
+
+export const RelatedFiles = ({selectedFile, relatedFiles, back, selectFile}) => {
 	return <div>
 		<div className="row">
 			<div className="columns twelve">
@@ -17,28 +21,37 @@ export const RelatedFiles = ({selectedFile, relatedFiles, back}) => {
 			</colgroup>
 			<thead>
 				<tr>
-					<th>Filename</th>
-					<th>Cohesion</th>
-					<th>Times Changed With</th>
-					<th>Times Changed Without</th>
+					<th title="A file that changes with me.">Filename</th>
+					<th title="Cohesion - when I change how often the file changes with me."><Cohesion/></th>
+					<th title="how many times the file changed with me."><Together/></th>
+					<th title="how many times the file changed without me."><Alone/></th>
 				</tr>
 			</thead>
 			<tbody>
-				{relatedFiles.map(file => <tr key={file.filenameThatAlsoChanged}>
-					<td>
-						<div style={{
+				{relatedFiles.map(file => {
+					const splitPath = file.filenameThatAlsoChanged.split('/');
+					const filename = splitPath[splitPath.length - 1];
+				return <tr
+					key={file.filenameThatAlsoChanged}
+					title={
+						`When I change, ${filename} changes with me ${file.percentCohesiveByChange}% of the time (${file.timesChangedWith} times).
+							It's changed on it's own without me ${file.timesDidNotChangeWith} times.`}
+					>
+					<td onClick={() => selectFile(file.filenameThatAlsoChanged)}>
+						<div title={file.filenameThatAlsoChanged} style={{
 							width: '500px',
+							cursor: 'pointer',
 							textAlign: 'left',
 							background: `linear-gradient(90deg, lightsteelblue ${file.percentCohesiveByChange}%, #FFF 0%)`
 							}}>
-							{file.filenameThatAlsoChanged}
+							{filename}
 						</div>
 					</td>
 					<td>{file.percentCohesiveByChange}%</td>
 					<td>{file.timesChangedWith}</td>
 					<td>{file.timesDidNotChangeWith}</td>
-				</tr>)}
-
+				</tr>;
+			})}
 			</tbody>
 		</table>
 	</div>;

@@ -19,6 +19,8 @@ export class Report extends React.Component {
 					"package.json",
 					"package-lock.json",
 					".css",
+					".scss",
+					".sqlproj",
 					".config"
 				]);
 				this.setState({
@@ -36,13 +38,17 @@ export class Report extends React.Component {
 				return <FileTable usages={usages}
 					selectFile={file => this.setState({selectedFile: file})} />;
 			}else{
-				return <Skeleton count={10}/>;
+				return <React.Fragment>
+					<i>The model file may take a while to load...</i>
+					<Skeleton count={10}/>
+				</React.Fragment>;
 			}
 		}else{
 			return <RelatedFiles
 				selectedFile={this.state.selectedFile}
 				relatedFiles={this.state.model.reporting.getRelatedForPath(this.state.selectedFile)}
 				back={file => this.setState({selectedFile: null})}
+				selectFile={file => this.setState({selectedFile: file})}
 				/>
 		}
 	}

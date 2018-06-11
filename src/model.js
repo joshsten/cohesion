@@ -40,7 +40,9 @@ export function createModel(rootDirectory = "",initialModel = {}) {
 				return;
 			}
 			yKeys.forEach(yKey => {
-				if (model.data[xKey][yKey].ref < relationThresholdForInclusion) {
+				if (model.data[xKey][yKey].ref < relationThresholdForInclusion
+				//	|| ignorePatterns.some(pattern => (getNameFromIndex(yKey) || "").indexOf(pattern) > -1)
+				) {
 					delete model.data[xKey][yKey];
 					pruneCount++;
 				}
