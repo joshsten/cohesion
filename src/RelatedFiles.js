@@ -6,14 +6,14 @@ import Cohesion from 'react-icons/lib/fa/arrows-h';
 
 export const RelatedFiles = ({selectedFile, relatedFiles, back, selectFile}) => {
 	const selectedSplitPath = selectedFile.split('/');
-	const selectedFilename = selectedFile[selectedSplitPath.length - 1];
+	const selectedFilename = selectedSplitPath[selectedSplitPath.length - 1];
 	return <div>
 		<div className="row">
 			<div className="columns twelve">
 				<button onClick={back} className="button"><FaListUl/>Files Changed</button>
 			</div>
 		</div>
-		<h4 title={selectedFile}>{`${selectedFile[selectedSplitPath.length - 2]}/${selectedFilename}`} changes with...</h4>
+		<h4 title={selectedFile}>{`${selectedSplitPath[selectedSplitPath.length - 2]}/${selectedFilename}`} changes with...</h4>
 		<table>
 			<colgroup>
 				<col span="1" style={{width: '70%'}}/>
