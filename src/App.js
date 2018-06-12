@@ -1,11 +1,8 @@
-import React, { Component } from 'react';
-import {Report} from './Report'
+import React, { Component } from "react";
+import { Report } from "./Components/Report/Report";
 class App extends Component {
 	render() {
-		return <div className="container">
-				<h1>Cohesion</h1>
-				<Report/>
-			</div>;
+		return <Report />;
 	}
 }
 

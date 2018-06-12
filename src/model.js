@@ -1,14 +1,15 @@
 const fs = fs || {};
-export function createModel(rootDirectory = "",initialModel = {}) {
+export function createModel(rootDirectory = "", initialModel = {}) {
 	const model = initialModel;
 	model.data = model.data || {};
 
 	model.update = function(setOfRelations) {
-		setOfRelations.forEach(xElement => {
+		const filteredSetOfRelations = setOfRelations
+			.filter(relation => !model.ignorePatterns.some(pattern => relation.indexOf(pattern) > -1))
+			.map(relation => relation.toLowerCase().replace(rootDirectory.toLowerCase(), ""));
+		filteredSetOfRelations.forEach(xElement => {
 			const data = model.data;
-			setOfRelations.forEach(yElement => {
-				xElement = xElement.toLowerCase().replace(rootDirectory.toLowerCase(), "");
-				yElement = yElement.toLowerCase().replace(rootDirectory.toLowerCase(), "");
+			filteredSetOfRelations.forEach(yElement => {
 				data[xElement] = data[xElement] || {};
 				data[xElement][yElement] = data[xElement][yElement] || { ref: 0 };
 				data[xElement][yElement].ref += 1;
@@ -16,7 +17,7 @@ export function createModel(rootDirectory = "",initialModel = {}) {
 			try {
 				if (data[xElement]) {
 					const yKeys = Object.keys(data[xElement]);
-					yKeys.filter(yKey => !setOfRelations.includes(yKey)).forEach(yKey => {
+					yKeys.filter(yKey => !filteredSetOfRelations.includes(yKey)).forEach(yKey => {
 						data[xElement][yKey].unref = data[xElement][yKey].unref || 0;
 						data[xElement][yKey].unref += 1;
 					});
@@ -34,14 +35,15 @@ export function createModel(rootDirectory = "",initialModel = {}) {
 		let xKeys = Object.keys(model.data);
 		xKeys.forEach(xKey => {
 			const yKeys = Object.keys(model.data[xKey]);
-			if(ignorePatterns.some(pattern => (getNameFromIndex(xKey) || "").indexOf(pattern) > -1)){
+			if (ignorePatterns.some(pattern => (getNameFromIndex(xKey) || "").indexOf(pattern) > -1)) {
 				delete model.data[xKey];
 				pruneCount++;
 				return;
 			}
 			yKeys.forEach(yKey => {
-				if (model.data[xKey][yKey].ref < relationThresholdForInclusion
-				//	|| ignorePatterns.some(pattern => (getNameFromIndex(yKey) || "").indexOf(pattern) > -1)
+				if (
+					model.data[xKey][yKey].ref < relationThresholdForInclusion
+					//	|| ignorePatterns.some(pattern => (getNameFromIndex(yKey) || "").indexOf(pattern) > -1)
 				) {
 					delete model.data[xKey][yKey];
 					pruneCount++;
@@ -104,6 +106,11 @@ export function createModel(rootDirectory = "",initialModel = {}) {
 	const getNameFromIndex = function(index) {
 		return Object.keys(model.index).find(name => model.index[name] === parseInt(index));
 	};
+	const getSimplePath = function(path) {
+		if (!path) return path;
+		const split = path.split("/");
+		return `${split[split.length - 2]}/${split[split.length - 1]}`;
+	};
 
 	model.reporting = {
 		getUsages: options => {
@@ -130,7 +137,7 @@ export function createModel(rootDirectory = "",initialModel = {}) {
 
 			return usages;
 		},
-		getRelatedForPath: path => {
+		getRelatedForPath: (path, options = { sort: true }) => {
 			const files = Object.keys(model.index);
 			const index = model.index;
 			const data = model.data;
@@ -149,11 +156,93 @@ export function createModel(rootDirectory = "",initialModel = {}) {
 					timesChangedWith: relationData[relation].ref,
 					timesDidNotChangeWith: relationData[relation].unref
 				}));
-				formattedRelations.sort((a, b) => a.percentCohesiveByChange - b.percentCohesiveByChange).reverse();
+				if (options.sort) {
+					formattedRelations.sort((a, b) => a.percentCohesiveByChange - b.percentCohesiveByChange).reverse();
+				}
+
 				return formattedRelations;
 			} else {
 				console.log("Unable to find data on " + path);
 			}
+		},
+		getAllCohesiveness: ({ top, progressCallback }) => {
+			// get most cohesive relationships
+			const files = Object.keys(model.index);
+			let cohesionList = [];
+			let index = 0;
+			const fileCount = files.length;
+			files.forEach(file => {
+				index++;
+				const relations = model.reporting.getRelatedForPath(file, { sort: false });
+				if (relations) {
+					cohesionList.push.apply(
+						cohesionList,
+						relations.map(relations => {
+							relations.fromFile = file;
+							return relations;
+						})
+					);
+				}
+				progressCallback && progressCallback({ current: index, count: fileCount });
+			});
+			debugger;
+			cohesionList = cohesionList.filter(item => item.fromFile !== item.file); // filter out self references
+			cohesionList.sort((a, b) => a.percentCohesiveByChange - b.percentCohesiveByChange).reverse();
+			if (top) {
+				cohesionList = cohesionList.slice(0, top);
+			}
+			return cohesionList;
+		},
+		getChangeCounts: () => {
+			const histogramCounts = {};
+			const xKeys = Object.keys(model.data);
+			let totalCount = 0;
+			xKeys.forEach(xKey => {
+				const yKeys = Object.keys(model.data[xKey]);
+				yKeys.forEach(yKey => {
+					if (model.data[xKey][yKey]) {
+						histogramCounts[model.data[xKey][yKey].ref] = histogramCounts[model.data[xKey][yKey].ref] || 0;
+						histogramCounts[model.data[xKey][yKey].ref]++;
+						totalCount++;
+					}
+				});
+			});
+
+			const countsAsArray = Object.keys(histogramCounts).map(relationCount => ({
+				relationCount: relationCount,
+				filesHavingThisRelationCount: histogramCounts[relationCount],
+				percentageOfData: ((histogramCounts[relationCount] / totalCount) * 100).toFixed(2)
+			}));
+			countsAsArray.sort((a, b) => a.relationCount - b.relationCount);
+
+			return countsAsArray;
+		},
+		getAsGraph: selectedFile => {
+			const inverseIndex = {};
+			Object.keys(model.index).forEach(key => (inverseIndex[model.index[key]] = key));
+			const selectedFileIndex = model.index[selectedFile];
+			const nodes = Object.keys(model.index).map(filename => ({
+				id: model.index[filename],
+				name: getSimplePath(filename),
+				desc: filename,
+				group: filename.split(".").pop()
+			}));
+			const links = Object.keys(model.data)
+				.filter(key => !selectedFileIndex || key === selectedFileIndex)
+				.map(xKey =>
+					Object.keys(model.data[xKey]).map(yKey => {
+						return {
+							source: xKey,
+							target: yKey,
+							name: `${xKey} changed with ${yKey} ${model.data[xKey][yKey].ref} times and without ${model.data[xKey][yKey].unref} times.`,
+							value: model.data[xKey][yKey].ref
+						};
+					})
+				)
+				.reduce((a, b) => a.concat(b))
+				.slice(0, 1000);
+			nodes.push({ id: "0", name: "unknown" }); // TODO: 0 index is missing probably because of bad filter with 0 being false....
+			return { nodes, links };
 		}
 	};
 
